@@ -7,26 +7,35 @@ pipeline {
         DB_IMAGE = "${DOCKER_USER}/filrouge-db"
     }
     stages {
-        stage('Cloner le dépôt avec sous-modules') {
+        stage('Cloner le dépôt') {
             steps {
-                checkout([$class: 'GitSCM', 
-                    branches: [[name: 'main']], 
-                    extensions: [[$class: 'SubmoduleOption', 
-                                  disableSubmodules: false, 
-                                  parentCredentials: true, 
-                                  recursiveSubmodules: true, 
-                                  reference: '', 
-                                  trackingSubmodules: false]], 
-                    userRemoteConfigs: [[url: 'https://github.com/dakyh/FilRouge.git']]])
+                git branch: 'main',
+                    url: 'https://github.com/dakyh/FilRouge.git'
             }
         }
-        stage('Vérifier structure du dépôt') {
+        stage('Build des images') {
             steps {
-                bat 'dir Backend'
-                bat 'dir Frontend'
-                bat 'dir DB_filRouge'
+                bat 'docker build -t %BACKEND_IMAGE%:latest Backend'
+                bat 'docker build -t %FRONTEND_IMAGE%:latest Frontend'
+                bat 'docker build -t %DB_IMAGE%:latest DB_filRouge'
             }
         }
-        // Autres stages...
+        stage('Push des images') {
+            steps {
+                withDockerRegistry([credentialsId: 'FilRouge', url: '']) {
+                    bat 'docker push %BACKEND_IMAGE%:latest'
+                    bat 'docker push %FRONTEND_IMAGE%:latest'
+                    bat 'docker push %DB_IMAGE%:latest'
+                }
+            }
+        }
+        stage('Déploiement') {
+            steps {
+                bat '''
+                    docker-compose down || exit 0
+                    docker-compose up -d
+                '''
+            }
+        }
     }
 }

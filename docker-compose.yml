@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./Frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://backend:8000
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Backend:/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://odc:odc123@db:5432/odcdb
+       # Pour se connecter depuis l'hôte: postgresql://odc:odc123@localhost:5432/odcdb
+       # Pour se connecter depuis un autre conteneur: postgresql://odc:odc123@django_postgres_db:5432/odcdb
+      - DEBUG=True
+
+  db:
+    build:
+      context: ./DB_filRouge
+      dockerfile: Dockerfile
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=odc123
+      - POSTGRES_USER=odc
+      - POSTGRES_DB=odcdb
+    restart: always
+volumes:
+  postgres_data:

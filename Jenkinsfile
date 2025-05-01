@@ -9,6 +9,14 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'makhady',
+                    url: 'https://github.com/dakyh/FilRouge.git'
+            }
+        }
+
         stage('Build des images') {
             steps {
                 sh 'docker build -t $BACKEND_IMAGE:latest Backend'
@@ -45,6 +53,8 @@ pipeline {
         failure {
             echo "❌ Échec de l'exécution du pipeline"
         }
+        always {
+            sh 'docker logout || true'
+        }
     }
 }
-

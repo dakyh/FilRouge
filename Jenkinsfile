@@ -11,11 +11,14 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM',
+                checkout([
+                    $class: 'GitSCM',
                     branches: [[name: '*/main']],
                     doGenerateSubmoduleConfigurations: false,
                     extensions: [],
-                    userRemoteConfigs: [[url: 'https://github.com/dakyh/FilRouge.git']]
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/dakyh/FilRouge.git'
+                    ]]
                 ])
             }
         }
@@ -30,7 +33,7 @@ pipeline {
 
         stage('Push des images') {
             steps {
-                withDockerRegistry([credentialsId: 'khady', url: '']) {
+                withDockerRegistry([credentialsId: 'makhady', url: '']) {
                     sh 'docker push $BACKEND_IMAGE:latest'
                     sh 'docker push $FRONTEND_IMAGE:latest'
                     sh 'docker push $DB_IMAGE:latest'

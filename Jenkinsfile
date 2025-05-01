@@ -18,34 +18,34 @@ pipeline {
         
         stage('Build des images') {
             steps {
-                bat 'docker build -t %BACKEND_IMAGE%:latest Backend'
-                bat 'docker build -t %FRONTEND_IMAGE%:latest Frontend'
-                bat 'docker build -t %DB_IMAGE%:latest DB_filRouge'
+                sh 'docker build -t $BACKEND_IMAGE:latest Backend'
+                sh 'docker build -t $FRONTEND_IMAGE:latest Frontend'
+                sh 'docker build -t $DB_IMAGE:latest DB_filRouge'
             }
         }
         
         stage('Push des images') {
             steps {
                 withDockerRegistry([credentialsId: 'khady', url: '']) {
-                    bat 'docker push %BACKEND_IMAGE%:latest'
-                    bat 'docker push %FRONTEND_IMAGE%:latest'
-                    bat 'docker push %DB_IMAGE%:latest'
+                    sh 'docker push $BACKEND_IMAGE:latest'
+                    sh 'docker push $FRONTEND_IMAGE:latest'
+                    sh 'docker push $DB_IMAGE:latest'
                 }
             }
         }
         
         stage('Déploiement') {
             steps {
-                bat '''
-                    docker-compose down || exit 0
+                sh '''
+                    docker-compose down || true
                     docker-compose pull
                     docker-compose up -d
                 '''
             }
         }
     }
-    
-    // Vous pouvez décommenter cette section quand vous aurez configuré le serveur de mail
+
+    // Si tu veux ajouter les mails plus tard
     /*
     post {
         success {
@@ -59,7 +59,7 @@ pipeline {
                  body: "Une erreur s'est produite lors du déploiement de l'application."
         }
         always {
-            bat 'docker logout'
+            sh 'docker logout'
         }
     }
     */

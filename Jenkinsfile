@@ -9,20 +9,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/dakyh/FilRouge.git'
-                    ]]
-                ])
-            }
-        }
-
         stage('Build des images') {
             steps {
                 sh 'docker build -t $BACKEND_IMAGE:latest Backend'

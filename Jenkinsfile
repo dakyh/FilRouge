@@ -1,28 +1,33 @@
 pipeline {
     agent any
-
+    
     environment {
         DOCKER_USER = 'dakyh'
         BACKEND_IMAGE = "${DOCKER_USER}/filrouge-backend"
         FRONTEND_IMAGE = "${DOCKER_USER}/filrouge-frontend"
         DB_IMAGE = "${DOCKER_USER}/filrouge-db"
     }
-
+    
     stages {
-        stage('Cloner le dépôt') {
+        stage('Checkout') {
             steps {
-                sh 'git clone https://github.com/dakyh/FilRouge.git'
+                // Utilisation du mécanisme intégré de Jenkins pour le checkout
+                checkout([$class: 'GitSCM', 
+                    branches: [[name: '*/main']], // Changer pour votre branche si nécessaire
+                    extensions: [],
+                    userRemoteConfigs: [[url: 'https://github.com/dakyh/FilRouge.git']]
+                ])
             }
         }
-
+        
         stage('Build des images') {
             steps {
-                sh 'docker build -t $BACKEND_IMAGE:latest FilRouge/Backend'
-                sh 'docker build -t $FRONTEND_IMAGE:latest FilRouge/Frontend'
-                sh 'docker build -t $DB_IMAGE:latest FilRouge/DB_filRouge'
+                sh 'docker build -t $BACKEND_IMAGE:latest ./Backend'
+                sh 'docker build -t $FRONTEND_IMAGE:latest ./Frontend'
+                sh 'docker build -t $DB_IMAGE:latest ./DB_filRouge'
             }
         }
-
+        
         stage('Push des images') {
             steps {
                 withDockerRegistry([credentialsId: 'khady', url: '']) {
@@ -32,7 +37,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Déploiement') {
             steps {
                 sh '''

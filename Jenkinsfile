@@ -2,19 +2,11 @@ pipeline {
     agent none
 
     environment {
-        DOCKER_CREDENTIALS_ID = 'makhady' // Ton ID d'identifiants Docker Hub
+        DOCKER_CREDENTIALS_ID = 'makhady'
         DOCKERHUB_USER = 'dakyh'
     }
 
     stages {
-        stage('Checkout') {
-            agent any
-            steps {
-                echo '📥 Clonage du dépôt GitHub...'
-                checkout scm
-            }
-        }
-
         stage('Build & Test Backend') {
             agent {
                 docker {

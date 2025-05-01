@@ -1,104 +1,87 @@
 pipeline {
-    agent none
+
+
+    agent any
+
 
     environment {
-        DOCKER_CREDENTIALS_ID = 'makhady'
-        DOCKERHUB_USER = 'dakyh'
+
+        DOCKER_USER = 'dakyh'
+
+        BACKEND_IMAGE = "${DOCKER_USER}/filrouge-backend"
+
+        FRONTEND_IMAGE = "${DOCKER_USER}/filrouge-frontend"
+
+        DB_IMAGE = "${DOCKER_USER}/filrouge-db"
+
     }
+
 
     stages {
-        stage('Build & Test Backend') {
-            agent {
-                docker {
-                    image 'python:3.12-slim'
-                    args '-u root:root'
-                }
-            }
+
+        stage('Cloner le dépôt') {
+
             steps {
-                dir('Backend') {
-                    echo "🔧 Installation et tests Backend"
-                    sh '''
-                        python3 -m venv venv
-                        . venv/bin/activate
-                        pip install --upgrade pip
-                        pip install -r requirements.txt || true
-                        # python3 manage.py test || true
-                    '''
-                }
+
+                git branch: 'main',
+
+                    url: 'https://github.com/dakyh/FilRouge.git'
+
             }
+
         }
 
-        stage('Build & Test Frontend') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    args '-u root:root'
-                }
-            }
+
+        stage('Build des images') {
+
             steps {
-                dir('Frontend') {
-                    echo "🔧 Build Frontend React"
-                    sh '''
-                        npm install
-                        npm run build
-                    '''
-                }
+
+                bat 'docker build -t %BACKEND_IMAGE%:latest Backend'
+
+                bat 'docker build -t %FRONTEND_IMAGE%:latest Frontend'
+
+                bat 'docker build -t %DB_IMAGE%:latest DB_filRouge'
+
             }
+
         }
 
-        stage('Build Docker images') {
-            agent any
+
+        stage('Push des images') {
+
             steps {
-                echo '🐳 Construction des images Docker...'
-                dir('Backend') {
-                    sh "docker build -t ${DOCKERHUB_USER}/filrouge-backend:latest ."
+
+                withDockerRegistry([credentialsId: 'FilRouge', url: '']) {
+
+                    bat 'docker push %BACKEND_IMAGE%:latest'
+
+                    bat 'docker push %FRONTEND_IMAGE%:latest'
+
+                    bat 'docker push %DB_IMAGE%:latest'
+
                 }
-                dir('Frontend') {
-                    sh "docker build -t ${DOCKERHUB_USER}/filrouge-frontend:latest ."
-                }
-                dir('DB_filRouge') {
-                    sh "docker build -t ${DOCKERHUB_USER}/filrouge-db:latest ."
-                }
+
             }
+
         }
 
-        stage('Push Docker images') {
-            agent any
-            steps {
-                echo '🚀 Push vers Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh '''
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push $DOCKER_USER/filrouge-backend:latest
-                        docker push $DOCKER_USER/filrouge-frontend:latest
-                        docker push $DOCKER_USER/filrouge-db:latest
-                    '''
-                }
-            }
-        }
 
         stage('Déploiement') {
-            agent any
-            steps {
-                echo '🚀 Lancement de l’application via Docker Compose'
-                sh '''
-                    docker compose down || true
-                    docker compose up -d
-                '''
-            }
-        }
-    }
 
-    post {
-        always {
-            echo '🧹 Nettoyage terminé'
-            sh 'docker logout || true'
+            steps {
+
+                bat '''
+
+                    docker-compose down || exit 0
+
+
+                    docker-compose up -d
+
+                '''
+
+            }
+
         }
-        success {
-            echo '✅ Pipeline terminé avec succès'
-        }
-        failure {
-            echo '❌ Échec du pipeline'
-        }
+
     }
 }
